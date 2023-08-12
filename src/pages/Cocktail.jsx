@@ -1,22 +1,36 @@
 import axios from 'axios';
 import { Link, useLoaderData, Navigate } from 'react-router-dom';
 import Wrapper from '../assets/wrappers/CocktailPage';
+import { useQuery } from '@tanstack/react-query';
 
 const singleCocktailUrl =
   'https://www.thecocktaildb.com/api/json/v1/1/lookup.php?i=';
 
-export const loader = async (obj) => {
+const singleCocktailQuery = (id) => {
+  return {
+    queryKey: ['cocktail', id],
+    queryFn: async () => {
+      const response = await axios.get(`${singleCocktailUrl}${id}`);
+      // console.log(response);
+      const { data } = response;
+      return data;
+    },
+  };
+};
+
+// function that takes a parameter - queryClient and returns a function
+// cannot use react hooks in loader
+export const loader = (queryClient) => async (obj) => {
   // console.log(obj);
   const { params } = obj;
   const { id } = params;
-  const response = await axios.get(`${singleCocktailUrl}${id}`);
-  // console.log(response);
-  const { data } = response;
-  return { id, data };
+  await queryClient.ensureQueryData(singleCocktailQuery(id));
+  return { id };
 };
 
 const Cocktail = () => {
-  const { id, data } = useLoaderData();
+  const { id } = useLoaderData();
+  const { data } = useQuery(singleCocktailQuery(id));
 
   if (!data || !data.drinks) {
     // return <h2>Something went wrong...</h2>;
